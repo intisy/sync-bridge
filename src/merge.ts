@@ -1,8 +1,5 @@
 // @ts-nocheck
-// Merge strategies for synced files. A strategy takes the per-home versions
-// ([{ data: fileText, mtimeMs }]) and returns the reconciled file text to write
-// to every home. "newest" is the generic default; "accounts" unions the core-auth
-// account store so a login in either app is never lost.
+// Merge strategies for synced files: a strategy takes per-home versions ([{ data, mtimeMs }]) and returns the reconciled text. "newest" is the default; "accounts" unions the core-auth store so a login in either app is never lost.
 
 export function newest(versions) {
   let best = null;
@@ -24,7 +21,6 @@ function mergeAccount(a, b) {
   return { ...a, ...b, rateLimitResetTimes: lanes, meta: { ...(a.meta || {}), ...(b.meta || {}) } };
 }
 
-// union the core-auth account store across homes: { version, providers: { id: { accounts, ... } } }
 export function accounts(versions) {
   const out = { version: 1, providers: {} };
   const ordered = [...versions].sort((a, b) => a.mtimeMs - b.mtimeMs); // oldest first so newest wins

@@ -1,9 +1,5 @@
 // @ts-nocheck
-// sync-bridge public surface. Used two ways:
-//  1. As a library (e.g. bundled into core-auth): call registerSyncFile + sync,
-//     or syncAccounts() directly, to mirror files across both app homes.
-//  2. As a loadable plugin: the OpenCode/Claude entry syncs the registered files
-//     (and the core-auth account store + any config-listed files) on load.
+// sync-bridge public surface, used either as a library (registerSyncFile + sync, or syncAccounts directly) or as a loadable plugin that syncs registered files on load.
 
 import { syncFile, sync, registerSyncFile, registeredFiles } from "./sync.js";
 import { claudeHome, opencodeHome, existingHomes, allHomes } from "./homes.js";
@@ -11,15 +7,14 @@ import { getSyncConfig } from "./config.js";
 
 export { syncFile, sync, registerSyncFile, registeredFiles, claudeHome, opencodeHome, existingHomes, allHomes };
 
-// the core-auth account pool: synced by default so one login serves both apps
+// synced by default so one login serves both apps
 export const ACCOUNT_STORE = "config/core-auth-accounts.json";
 
 export function syncAccounts() {
   return syncFile(ACCOUNT_STORE, { strategy: "accounts" });
 }
 
-// reconcile the account store + every file listed in sync-bridge's own config
-//   { "files": [{ "path": "config/foo.json", "strategy": "newest" }] }
+// account store + every file in config.files: [{ path, strategy }]
 export function syncAll() {
   const results = { [ACCOUNT_STORE]: syncAccounts() };
   for (const entry of getSyncConfig().files || []) {
@@ -29,7 +24,7 @@ export function syncAll() {
   return results;
 }
 
-// OpenCode / Claude plugin entry — best-effort sync on load, never throws
+// plugin entry — best-effort sync on load, never throws
 export const SyncBridgePlugin = async function () {
   try { syncAll(); } catch {}
   return {};

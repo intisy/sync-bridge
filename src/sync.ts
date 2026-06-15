@@ -1,7 +1,5 @@
 // @ts-nocheck
-// The sync engine: reconcile a relative path across every existing app home.
-// Reads each home's copy, runs the chosen merge strategy, and writes the result
-// back to every home (atomic temp-rename, skipping homes already up to date).
+// The sync engine: reconcile a relative path across every existing app home via the chosen merge strategy (atomic temp-rename, skipping homes already up to date).
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, renameSync } from "fs";
 import { join, dirname } from "path";
@@ -24,7 +22,6 @@ function atomicWrite(file, content) {
   renameSync(tmp, file);
 }
 
-// reconcile one relative path (e.g. "config/core-auth-accounts.json") across homes
 export function syncFile(relativePath, options) {
   const strategy = STRATEGIES[(options && options.strategy) || "newest"] || newest;
   const homes = existingHomes();
@@ -42,7 +39,7 @@ export function syncFile(relativePath, options) {
   return { synced: true, homes: homes.length, wrote };
 }
 
-// register a file so sync() reconciles it; idempotent
+// idempotent
 export function registerSyncFile(relativePath, options) {
   REGISTERED.set(relativePath, options || {});
 }
@@ -51,7 +48,6 @@ export function registeredFiles() {
   return [...REGISTERED.entries()].map(([path, options]) => ({ path, options }));
 }
 
-// reconcile every registered file; returns a per-file result map
 export function sync() {
   const results = {};
   for (const [relativePath, options] of REGISTERED) results[relativePath] = syncFile(relativePath, options);

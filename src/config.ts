@@ -1,7 +1,5 @@
 // @ts-nocheck
-// sync-bridge config + logging. Config lives at <home>/config/sync-bridge.json
-// (preferred) or <home>/sync-bridge.json (fallback); read from whichever app home
-// has it (Claude checked first). Minimum schema: { "logging": true }.
+// sync-bridge config + logging. Config at <home>/config/sync-bridge.json (preferred) or <home>/sync-bridge.json (fallback), from whichever home has it (Claude first).
 
 import { existsSync, readFileSync, mkdirSync, appendFileSync } from "fs";
 import { join } from "path";

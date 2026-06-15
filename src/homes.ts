@@ -1,10 +1,5 @@
 // @ts-nocheck
-// Resolves the Claude Code and OpenCode home directories. sync-bridge is the one
-// component permitted to span BOTH app homes; every other plugin stays inside the
-// single home of the app it is running in. Precedence (per project convention):
-//   Claude:   ~/.claude          then ~/.config/claude   (direct first)
-//   OpenCode: ~/.config/opencode then ~/.opencode         (XDG first)
-// Explicit overrides (HUB_CLAUDE_DIR / HUB_OPENCODE_DIR) win and make this testable.
+// Resolves the Claude and OpenCode home dirs; sync-bridge is the only component permitted to span both. Precedence: Claude ~/.claude before ~/.config/claude (direct first); OpenCode ~/.config/opencode before ~/.opencode (XDG first). HUB_CLAUDE_DIR / HUB_OPENCODE_DIR override.
 
 import { existsSync } from "fs";
 import { join } from "path";
@@ -28,8 +23,7 @@ export function opencodeHome() {
   return resolve(process.env.HUB_OPENCODE_DIR, [join(home, ".config", "opencode"), join(home, ".opencode")], join(home, ".config", "opencode"));
 }
 
-// app homes that exist on disk — the actual sync targets (an absent home means
-// that app is not installed, so there is nothing to sync there).
+// app homes that exist on disk; an absent home means that app isn't installed
 export function existingHomes() {
   const homes = [];
   for (const home of [claudeHome(), opencodeHome()]) {
@@ -38,7 +32,6 @@ export function existingHomes() {
   return homes;
 }
 
-// both candidate homes regardless of existence
 export function allHomes() {
   const homes = [];
   for (const home of [claudeHome(), opencodeHome()]) if (!homes.includes(home)) homes.push(home);
