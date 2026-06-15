@@ -1,0 +1,38 @@
+{
+  "name": "sync-bridge",
+  "version": "0.1.0",
+  "description": "Syncs config and account files between Claude Code and OpenCode homes — the one plugin allowed to span both app directories",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "author": "intisy",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/intisy/sync-bridge.git"
+  },
+  "keywords": [
+    "opencode",
+    "claude",
+    "sync",
+    "config",
+    "core-auth"
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^5.0.0"
+  }
+}
