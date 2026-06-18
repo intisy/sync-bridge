@@ -1,17 +1,18 @@
 // @ts-nocheck
-// sync-bridge public surface, used either as a library (registerSyncFile + sync) or
-// as a loadable plugin that syncs the files from sync-bridge.json on load.
+// sync-bridge OpenCode/Claude plugin entry. It exports ONLY the plugin hook:
+// OpenCode runs EVERY export as a plugin hook and collects the results, so any
+// extra export (the library functions) would register as a bogus hook — and the
+// ones returning undefined / throwing make opencode's `resolvePluginProviders`
+// crash with "undefined is not an object (evaluating 'hook.auth')". The library
+// API (sync, syncFile, registerSyncFile, homes…) is still importable directly
+// from ./sync.js / ./homes.js for any in-process consumer.
 
-import { syncFile, sync, registerSyncFile, registeredFiles } from "./sync.js";
-import { claudeHome, opencodeHome, existingHomes, allHomes } from "./homes.js";
+import { syncFile, sync } from "./sync.js";
 import { getSyncConfig } from "./config.js";
 
-export { syncFile, sync, registerSyncFile, registeredFiles, claudeHome, opencodeHome, existingHomes, allHomes };
-
 // sync every file from sync-bridge.json (`files: [{ name, strategy }]`, defaulting
-// to the core-auth account store). Each name is resolved per home to config/<name>
-// or <name>, whichever exists. Library-registered files sync too.
-export function syncAll() {
+// to the core-auth account store), plus any library-registered files.
+function syncAll() {
   const results = {};
   for (const entry of getSyncConfig().files || []) {
     const name = entry && (entry.name || entry.path);
