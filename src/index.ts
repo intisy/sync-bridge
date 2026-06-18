@@ -1,5 +1,6 @@
 // @ts-nocheck
-// sync-bridge public surface, used either as a library (registerSyncFile + sync, or syncAccounts directly) or as a loadable plugin that syncs registered files on load.
+// sync-bridge public surface, used either as a library (registerSyncFile + sync) or
+// as a loadable plugin that syncs the files from sync-bridge.json on load.
 
 import { syncFile, sync, registerSyncFile, registeredFiles } from "./sync.js";
 import { claudeHome, opencodeHome, existingHomes, allHomes } from "./homes.js";
@@ -7,18 +8,14 @@ import { getSyncConfig } from "./config.js";
 
 export { syncFile, sync, registerSyncFile, registeredFiles, claudeHome, opencodeHome, existingHomes, allHomes };
 
-// synced by default so one login serves both apps
-export const ACCOUNT_STORE = "config/core-auth-accounts.json";
-
-export function syncAccounts() {
-  return syncFile(ACCOUNT_STORE, { strategy: "accounts" });
-}
-
-// account store + every file in config.files: [{ path, strategy }]
+// sync every file from sync-bridge.json (`files: [{ name, strategy }]`, defaulting
+// to the core-auth account store). Each name is resolved per home to config/<name>
+// or <name>, whichever exists. Library-registered files sync too.
 export function syncAll() {
-  const results = { [ACCOUNT_STORE]: syncAccounts() };
+  const results = {};
   for (const entry of getSyncConfig().files || []) {
-    if (entry && entry.path) results[entry.path] = syncFile(entry.path, { strategy: entry.strategy || "newest" });
+    const name = entry && (entry.name || entry.path);
+    if (name) results[name] = syncFile(name, { strategy: entry.strategy || "newest" });
   }
   Object.assign(results, sync());
   return results;

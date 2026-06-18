@@ -22,11 +22,23 @@ function atomicWrite(file, content) {
   renameSync(tmp, file);
 }
 
-export function syncFile(relativePath, options) {
+// resolve a bare file name to where it lives in a home: config/<name> (preferred)
+// or <name> at the top, whichever exists; config/<name> is the default write site.
+// a name containing a path separator is treated as an explicit relative path.
+function resolvePath(home, name) {
+  if (name.includes("/") || name.includes("\\")) return join(home, name);
+  const preferred = join(home, "config", name);
+  const fallback = join(home, name);
+  if (existsSync(preferred)) return preferred;
+  if (existsSync(fallback)) return fallback;
+  return preferred;
+}
+
+export function syncFile(name, options) {
   const strategy = STRATEGIES[(options && options.strategy) || "newest"] || newest;
   const homes = existingHomes();
   if (homes.length < 2) return { synced: false, reason: "fewer than two app homes", homes: homes.length, wrote: 0 };
-  const files = homes.map((home) => join(home, relativePath));
+  const files = homes.map((home) => resolvePath(home, name));
   const versions = files.map(readVersion).filter(Boolean);
   if (versions.length === 0) return { synced: false, reason: "no versions on any home", homes: homes.length, wrote: 0 };
   const merged = strategy(versions);

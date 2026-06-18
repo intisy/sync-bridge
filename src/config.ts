@@ -8,6 +8,11 @@ import { existingHomes } from "./homes.js";
 const NAME = "sync-bridge";
 const START_TIME = new Date().toISOString().replace(/:/g, "-").split(".")[0];
 
+// synced out of the box so one login serves both apps; override entirely with a
+// `files` array in sync-bridge.json. Each entry is { name, strategy }; `name` is
+// resolved per home to config/<name> or <name>, whichever exists.
+const DEFAULT_FILES = [{ name: "core-auth-accounts.json", strategy: "accounts" }];
+
 let SYNC_CONFIG = null;
 
 function findConfigFile() {
@@ -22,10 +27,12 @@ function findConfigFile() {
 
 export function getSyncConfig() {
   if (SYNC_CONFIG !== null) return SYNC_CONFIG;
+  let loaded = {};
   try {
     const file = findConfigFile();
-    SYNC_CONFIG = file ? JSON.parse(readFileSync(file, "utf8")) : {};
-  } catch { SYNC_CONFIG = {}; }
+    if (file) loaded = JSON.parse(readFileSync(file, "utf8"));
+  } catch { loaded = {}; }
+  SYNC_CONFIG = { ...loaded, files: Array.isArray(loaded.files) ? loaded.files : DEFAULT_FILES };
   return SYNC_CONFIG;
 }
 
