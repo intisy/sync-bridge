@@ -1,12 +1,14 @@
 // @ts-nocheck
-// sync-bridge config + logging. Config at <home>/config/sync-bridge.json (preferred) or <home>/sync-bridge.json (fallback), from whichever home has it (Claude first).
+// sync-bridge config + logging. The config search is bespoke (it spans BOTH app
+// homes, Claude first, and carries a `files` array), so getSyncConfig stays local;
+// the log WRITING is delegated to the shared core-log library like every other plugin.
 
-import { existsSync, readFileSync, mkdirSync, appendFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { existingHomes } from "./homes.js";
+import { makeWriteLog } from "../core-log/src/index.js";
 
 const NAME = "sync-bridge";
-const START_TIME = new Date().toISOString().replace(/:/g, "-").split(".")[0];
 
 // synced out of the box so one login serves both apps; override entirely with a
 // `files` array in sync-bridge.json. Each entry is { name, strategy }; `name` is
@@ -36,18 +38,4 @@ export function getSyncConfig() {
   return SYNC_CONFIG;
 }
 
-export function writeLog(message, isError = false) {
-  const loggingEnabled = getSyncConfig().logging !== false;
-  try {
-    if (loggingEnabled) {
-      const date = new Date();
-      const home = existingHomes()[0];
-      if (home) {
-        const logsDir = join(home, "logs", date.toISOString().split("T")[0]);
-        if (!existsSync(logsDir)) mkdirSync(logsDir, { recursive: true });
-        appendFileSync(join(logsDir, NAME + "-" + START_TIME + ".log"), "[" + date.toISOString() + "] " + (isError ? "[ERROR] " : "[INFO] ") + message + "\n");
-      }
-    }
-  } catch {}
-  if (isError) console.error(message);
-}
+export const writeLog = makeWriteLog(NAME);
