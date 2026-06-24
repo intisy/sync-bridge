@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 
-const dist = pathToFileURL(join(process.cwd(), "dist", "index.js")).href;
+// the in-process library bundle (NOT dist/index.js, which is the hook-only entry)
+const dist = pathToFileURL(join(process.cwd(), "dist", "lib.js")).href;
 
 function makeHome() {
   const dir = mkdtempSync(join(tmpdir(), "sb-"));
@@ -24,7 +25,15 @@ function pool(accounts) {
   return { version: 1, providers: { antigravity: { accounts, activeIndex: 0, activeIndexByLane: {} } } };
 }
 
-test("syncAccounts unions accounts across both homes, newest fields win", async () => {
+function writePlugins(home, entries) {
+  writeFileSync(join(home, "config", "plugins.json"), JSON.stringify(entries, null, 2), "utf8");
+}
+
+function readPlugins(home) {
+  return JSON.parse(readFileSync(join(home, "config", "plugins.json"), "utf8"));
+}
+
+test("accounts strategy unions the account store across both homes, newest fields win", async () => {
   const claude = makeHome();
   const opencode = makeHome();
   process.env.HUB_CLAUDE_DIR = claude;
@@ -41,7 +50,7 @@ test("syncAccounts unions accounts across both homes, newest fields win", async 
   ]), 2000);
 
   const mod = await import(dist);
-  const result = mod.syncAccounts();
+  const result = mod.syncFile("core-auth-accounts.json", { strategy: "accounts" });
   assert.equal(result.synced, true);
   assert.equal(result.homes, 2);
 
@@ -79,12 +88,44 @@ test("syncFile newest strategy copies the most recent version", async () => {
   rmSync(opencode, { recursive: true, force: true });
 });
 
+test("syncPlugins mirrors only sync:true entries into the other app, per-home", async () => {
+  const claude = makeHome();
+  const opencode = makeHome();
+  process.env.HUB_CLAUDE_DIR = claude;
+  process.env.HUB_OPENCODE_DIR = opencode;
+
+  // claude: A is synced, B is local-only. opencode: C is synced.
+  writePlugins(claude, [
+    { name: "plugin-a", url: "u/a", enabled: true, autoUpdate: false, sync: true },
+    { name: "plugin-b", url: "u/b", enabled: true, autoUpdate: false },
+  ]);
+  writePlugins(opencode, [
+    { name: "plugin-c", url: "u/c", enabled: true, autoUpdate: false, sync: true },
+  ]);
+
+  const mod = await import(dist);
+  const result = mod.syncPlugins();
+  assert.equal(result.synced, true);
+
+  const claudeNames = readPlugins(claude).map((e) => e.name).sort();
+  const opencodeNames = readPlugins(opencode).map((e) => e.name).sort();
+  assert.deepEqual(claudeNames, ["plugin-a", "plugin-b", "plugin-c"], "claude gains synced C, keeps local B");
+  assert.deepEqual(opencodeNames, ["plugin-a", "plugin-c"], "opencode gains synced A, NOT local-only B");
+
+  // idempotent: a second pass adds nothing
+  const again = mod.syncPlugins();
+  assert.deepEqual(again.added, {}, "second run is a no-op");
+
+  rmSync(claude, { recursive: true, force: true });
+  rmSync(opencode, { recursive: true, force: true });
+});
+
 test("no-op when fewer than two homes exist", async () => {
   const only = makeHome();
   process.env.HUB_CLAUDE_DIR = only;
   process.env.HUB_OPENCODE_DIR = join(tmpdir(), "sb-does-not-exist-xyz");
   const mod = await import(dist);
-  const result = mod.syncAccounts();
+  const result = mod.syncFile("core-auth-accounts.json", { strategy: "accounts" });
   assert.equal(result.synced, false);
   rmSync(only, { recursive: true, force: true });
 });
