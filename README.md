@@ -33,7 +33,8 @@ Each home is resolved by precedence (Claude prefers `~/.claude`; OpenCode prefer
 
 ## Structure
 
-- `src/` — TypeScript source (`homes`, `merge`, `sync`, `pluginsync`, `config`, `index` = hook, `lib` = library entry)
+- `src/` — TypeScript source (`homes`, `merge`, `sync`, `pluginsync`, `config`, `commands`, `index` = hook, `lib` = library entry)
+- `core/` — git submodule ([`intisy-ai/core`](https://github.com/intisy-ai/core)): shared config, logging, and the cross-app command framework — bundled into both output files by esbuild
 - `dist/` — Compiled output (generated; not committed): `index.js` (plugin hook) + `lib.js` (in-process library)
 - `test/` — Node test runner specs
 
@@ -84,6 +85,27 @@ Config file: `~/.config/opencode/config/sync-bridge.json` (preferred) or `~/.con
 ```
 
 The core-auth account store (`config/core-auth-accounts.json`) is always synced; `files` adds more.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `logging` | boolean | `true` | Write a per-session log file. Set `false` to disable. |
+| `files` | array | `[{ name: "core-auth-accounts.json", strategy: "accounts" }]` | Files to reconcile across homes. Each entry is `{ name, strategy }` where `strategy` is `accounts` (union by id) or `newest`. |
+
+Every key is editable from chat via `/sync-bridge-config`.
+
+## Commands
+
+Deployed automatically to both apps on load (`~/.config/opencode/command/` and `~/.claude/commands/`):
+
+| Command | Description |
+| --- | --- |
+| `/sync` | Reconcile all configured files and mirror `sync: true` plugins across both apps right now. |
+| `/sync-bridge-config` | View/change any config key: `list`, `get <key>`, `set <key> <value>`. 100% of the config is reachable here. |
+
+## Dependencies
+
+- **`core`** (required) — bundled git submodule; no separate install.
+- **`plugin-updater`** (recommended) — calls `syncPlugins()` from `dist/lib.js` each launch to mirror `sync: true` plugins; without it, only the on-load file reconcile and the `/sync` command run.
 
 ## Logging
 

@@ -10,6 +10,20 @@
 
 import { syncFile, sync } from "./sync.js";
 import { getSyncConfig } from "./config.js";
+import { deployCommands } from "../core/src/index.js";
+import { SYNC_COMMANDS, maybeRunCli } from "./commands.js";
+
+// When invoked as `node <bundle> <action>` (from a slash-command), run the action
+// and exit before the plugin/hook logic. On a normal load, keep the slash-commands
+// deployed to both apps (idempotent, best-effort).
+if (await maybeRunCli("sync-bridge")) {
+  process.exit(0);
+}
+try {
+  deployCommands("sync-bridge", SYNC_COMMANDS);
+} catch {
+  /* best-effort */
+}
 
 // sync every file from sync-bridge.json (`files: [{ name, strategy }]`, defaulting
 // to the core-auth account store), plus any library-registered files.
