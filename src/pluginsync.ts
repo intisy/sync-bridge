@@ -21,13 +21,17 @@ function pluginsFile(home) {
   return preferred;
 }
 
+// [] = genuinely absent/empty (safe to add into). null = the file exists but is
+// unreadable/unparseable — callers MUST skip that home so we never clobber real
+// local entries we just failed to read. Tolerates // line comments like the loader.
 function readEntries(file) {
+  if (!existsSync(file)) return [];
   try {
-    if (!existsSync(file)) return [];
-    const parsed = JSON.parse(readFileSync(file, "utf8"));
+    const raw = readFileSync(file, "utf8").replace(/^\s*\/\/[^\n]*/gm, "");
+    const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -53,6 +57,7 @@ export function syncPlugins() {
   // home's definition wins, which is fine — the entries are app-agnostic).
   const shared = new Map();
   for (const entries of perHome) {
+    if (!entries) continue; // unreadable home contributes nothing to the shared pool
     for (const entry of entries) {
       if (entry && entry.sync === true && entry.name) shared.set(entry.name, entry);
     }
@@ -62,10 +67,14 @@ export function syncPlugins() {
   const added = {};
   files.forEach((file, index) => {
     const entries = perHome[index];
+    if (!entries) return; // skip a home we couldn't read — never overwrite it
     const have = new Set(entries.map((entry) => entry && entry.name));
     const missing = [...shared.values()].filter((entry) => !have.has(entry.name));
     if (missing.length === 0) return;
-    const next = entries.concat(missing.map((entry) => ({ ...entry })));
+    // mirror as a fresh entry; drop the source's local `enabled` state so the
+    // plugin lands enabled in the receiving app (default) rather than inheriting
+    // a disable toggle from the other app.
+    const next = entries.concat(missing.map((entry) => { const e = { ...entry }; delete e.enabled; return e; }));
     atomicWrite(file, JSON.stringify(next, null, 2) + "\n");
     added[homes[index]] = missing.map((entry) => entry.name);
   });
