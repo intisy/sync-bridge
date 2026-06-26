@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, utimesSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -51,18 +50,18 @@ test("accounts strategy unions the account store across both homes, newest field
 
   const mod = await import(dist);
   const result = mod.syncFile("core-auth-accounts.json", { strategy: "accounts" });
-  assert.equal(result.synced, true);
-  assert.equal(result.homes, 2);
+  expect(result.synced).toBe(true);
+  expect(result.homes).toBe(2);
 
   for (const home of [claude, opencode]) {
     const store = JSON.parse(readFileSync(join(home, "config", "core-auth-accounts.json"), "utf8"));
     const accounts = store.providers.antigravity.accounts;
     const ids = accounts.map((a) => a.id).sort();
-    assert.deepEqual(ids, ["a1@x", "a2@x", "a3@x"], "both homes hold the union");
+    expect(ids).toEqual(["a1@x", "a2@x", "a3@x"]);
     const a2 = accounts.find((a) => a.id === "a2@x");
-    assert.equal(a2.lastUsed, 200, "newer lastUsed wins");
-    assert.equal(a2.meta.projectId, "p2", "older-only meta key preserved");
-    assert.equal(a2.meta.managedProjectId, "m2", "newer meta key merged");
+    expect(a2.lastUsed).toBe(200);
+    expect(a2.meta.projectId).toBe("p2");
+    expect(a2.meta.managedProjectId).toBe("m2");
   }
 
   rmSync(claude, { recursive: true, force: true });
@@ -81,8 +80,8 @@ test("syncFile newest strategy copies the most recent version", async () => {
 
   const mod = await import(dist);
   const result = mod.syncFile("config/plug.json", { strategy: "newest" });
-  assert.equal(result.synced, true);
-  assert.equal(readFileSync(join(claude, "config", "plug.json"), "utf8"), "NEW");
+  expect(result.synced).toBe(true);
+  expect(readFileSync(join(claude, "config", "plug.json"), "utf8")).toBe("NEW");
 
   rmSync(claude, { recursive: true, force: true });
   rmSync(opencode, { recursive: true, force: true });
@@ -105,16 +104,16 @@ test("syncPlugins mirrors only sync:true entries into the other app, per-home", 
 
   const mod = await import(dist);
   const result = mod.syncPlugins();
-  assert.equal(result.synced, true);
+  expect(result.synced).toBe(true);
 
   const claudeNames = readPlugins(claude).map((e) => e.name).sort();
   const opencodeNames = readPlugins(opencode).map((e) => e.name).sort();
-  assert.deepEqual(claudeNames, ["plugin-a", "plugin-b", "plugin-c"], "claude gains synced C, keeps local B");
-  assert.deepEqual(opencodeNames, ["plugin-a", "plugin-c"], "opencode gains synced A, NOT local-only B");
+  expect(claudeNames).toEqual(["plugin-a", "plugin-b", "plugin-c"]);
+  expect(opencodeNames).toEqual(["plugin-a", "plugin-c"]);
 
   // idempotent: a second pass adds nothing
   const again = mod.syncPlugins();
-  assert.deepEqual(again.added, {}, "second run is a no-op");
+  expect(again.added).toEqual({});
 
   rmSync(claude, { recursive: true, force: true });
   rmSync(opencode, { recursive: true, force: true });
@@ -126,6 +125,6 @@ test("no-op when fewer than two homes exist", async () => {
   process.env.HUB_OPENCODE_DIR = join(tmpdir(), "sb-does-not-exist-xyz");
   const mod = await import(dist);
   const result = mod.syncFile("core-auth-accounts.json", { strategy: "accounts" });
-  assert.equal(result.synced, false);
+  expect(result.synced).toBe(false);
   rmSync(only, { recursive: true, force: true });
 });
