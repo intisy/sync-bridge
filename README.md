@@ -2,9 +2,9 @@
 
 [![npm version](https://img.shields.io/npm/v/sync-bridge)](https://www.npmjs.com/package/sync-bridge)
 [![npm downloads](https://img.shields.io/npm/dm/sync-bridge)](https://www.npmjs.com/package/sync-bridge)
-[![CI](https://github.com/intisy/sync-bridge/actions/workflows/publish.yml/badge.svg)](https://github.com/intisy/sync-bridge/actions/workflows/publish.yml)
+[![CI](https://github.com/intisy-ai/sync-bridge/actions/workflows/publish.yml/badge.svg)](https://github.com/intisy-ai/sync-bridge/actions/workflows/publish.yml)
 
-Syncs config and account files between the Claude Code and OpenCode home directories. Every other plugin in the ecosystem stays inside the single home of the app it is running in; **sync-bridge is the one component permitted to span both homes**, so an account logged in (or a config changed) in one app is mirrored to the other. It is consumed two ways: as its own **plugin hook** (reconciles configured files on load — by default the core-auth account store), and as an **in-process library** (`dist/lib.js`) that [plugin-updater](https://github.com/intisy/plugin-updater) loads to run `syncPlugins()`, mirroring `plugins.json` entries flagged `sync: true` into the other app.
+Syncs config and account files between the Claude Code and OpenCode home directories. Every other plugin in the ecosystem stays inside the single home of the app it is running in; **sync-bridge is the one component permitted to span both homes**, so an account logged in (or a config changed) in one app is mirrored to the other. It is consumed two ways: as its own **plugin hook** (reconciles configured files on load — by default the core-auth account store), and as an **in-process library** (`dist/lib.js`) that [plugin-updater](https://github.com/intisy-ai/plugin-updater) loads to run `syncPlugins()`, mirroring `plugins.json` entries flagged `sync: true` into the other app.
 
 ## Under-the-Hood Architecture
 
@@ -42,7 +42,7 @@ Each home is resolved by precedence (Claude prefers `~/.claude`; OpenCode prefer
 ### Via plugin-updater (recommended)
 Add to `~/.config/opencode/config/plugins.json`:
 ```json
-[{ "name": "sync-bridge", "url": "https://github.com/intisy/sync-bridge", "enabled": true }]
+[{ "name": "sync-bridge", "url": "https://github.com/intisy-ai/sync-bridge", "enabled": true }]
 ```
 
 ### Via npm
@@ -69,7 +69,7 @@ sync();                                           // reconcile everything regist
 Give any `plugins.json` entry a `sync: true` flag and it is mirrored into the other app's `plugins.json` on the next `plugin-updater` run, so installing a plugin in one app installs it in the other. It is a **per-home union** (each app keeps its own non-synced entries) and **additive** (never removes).
 
 ```json
-[{ "name": "antigravity-auth", "url": "https://github.com/intisy/antigravity-auth", "enabled": true, "autoUpdate": false, "sync": true }]
+[{ "name": "antigravity-auth", "url": "https://github.com/intisy-ai/antigravity-auth", "enabled": true, "autoUpdate": false, "sync": true }]
 ```
 
 ## Configuration
