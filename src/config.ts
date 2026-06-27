@@ -13,7 +13,7 @@ const NAME = "sync-bridge";
 // synced out of the box so one login serves both apps; override entirely with a
 // `files` array in sync-bridge.json. Each entry is { name, strategy }; `name` is
 // resolved per home to config/<name> or <name>, whichever exists.
-const DEFAULT_FILES = [{ name: "core-auth-accounts.json", strategy: "accounts" }];
+const DEFAULT_FILES = [{ name: "accounts.json", strategy: "accounts" }];
 
 let SYNC_CONFIG = null;
 

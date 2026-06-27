@@ -14,7 +14,7 @@ function makeHome() {
 }
 
 function writeStore(home, store, mtimeSeconds) {
-  const file = join(home, "config", "core-auth-accounts.json");
+  const file = join(home, "config", "accounts.json");
   writeFileSync(file, JSON.stringify(store, null, 2), "utf8");
   if (mtimeSeconds) utimesSync(file, mtimeSeconds, mtimeSeconds);
   return file;
@@ -49,12 +49,12 @@ test("accounts strategy unions the account store across both homes, newest field
   ]), 2000);
 
   const mod = await import(dist);
-  const result = mod.syncFile("core-auth-accounts.json", { strategy: "accounts" });
+  const result = mod.syncFile("accounts.json", { strategy: "accounts" });
   expect(result.synced).toBe(true);
   expect(result.homes).toBe(2);
 
   for (const home of [claude, opencode]) {
-    const store = JSON.parse(readFileSync(join(home, "config", "core-auth-accounts.json"), "utf8"));
+    const store = JSON.parse(readFileSync(join(home, "config", "accounts.json"), "utf8"));
     const accounts = store.providers.antigravity.accounts;
     const ids = accounts.map((a) => a.id).sort();
     expect(ids).toEqual(["a1@x", "a2@x", "a3@x"]);
@@ -124,7 +124,7 @@ test("no-op when fewer than two homes exist", async () => {
   process.env.HUB_CLAUDE_DIR = only;
   process.env.HUB_OPENCODE_DIR = join(tmpdir(), "sb-does-not-exist-xyz");
   const mod = await import(dist);
-  const result = mod.syncFile("core-auth-accounts.json", { strategy: "accounts" });
+  const result = mod.syncFile("accounts.json", { strategy: "accounts" });
   expect(result.synced).toBe(false);
   rmSync(only, { recursive: true, force: true });
 });

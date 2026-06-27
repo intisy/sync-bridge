@@ -29,7 +29,7 @@ flowchart TD
     UPDATER["plugin-updater"] -->|syncPlugins() each launch| LIB
 ```
 
-Each home is resolved by precedence (Claude prefers `~/.claude`; OpenCode prefers `~/.config/opencode`), overridable via `HUB_CLAUDE_DIR` / `HUB_OPENCODE_DIR`. A relative path (e.g. `config/core-auth-accounts.json`) is read from every existing home, reconciled by a merge strategy, and written back atomically to all homes. The `accounts` strategy unions the core-auth account store by account id so no login is ever lost; `newest` copies the most-recently-modified version.
+Each home is resolved by precedence (Claude prefers `~/.claude`; OpenCode prefers `~/.config/opencode`), overridable via `HUB_CLAUDE_DIR` / `HUB_OPENCODE_DIR`. A relative path (e.g. `config/accounts.json`) is read from every existing home, reconciled by a merge strategy, and written back atomically to all homes. The `accounts` strategy unions the core-auth account store by account id so no login is ever lost; `newest` copies the most-recently-modified version.
 
 ## Structure
 
@@ -59,7 +59,7 @@ The package main (`dist/index.js`) is the plugin hook and intentionally exports 
 import { syncPlugins, syncFile, registerSyncFile, sync, existingHomes } from "sync-bridge/dist/lib.js";
 
 syncPlugins();                                    // mirror plugins.json entries flagged sync:true across apps
-syncFile("core-auth-accounts.json", { strategy: "accounts" }); // union the account store
+syncFile("accounts.json", { strategy: "accounts" }); // union the account store
 syncFile("config/plugins.json", { strategy: "newest" });
 registerSyncFile("config/plugins.json", { strategy: "newest" });
 sync();                                           // reconcile everything registered
@@ -84,12 +84,12 @@ Config file: `~/.config/opencode/config/sync-bridge.json` (preferred) or `~/.con
 }
 ```
 
-The core-auth account store (`config/core-auth-accounts.json`) is always synced; `files` adds more.
+The core-auth account store (`config/accounts.json`) is always synced; `files` adds more.
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `logging` | boolean | `true` | Write a per-session log file. Set `false` to disable. |
-| `files` | array | `[{ name: "core-auth-accounts.json", strategy: "accounts" }]` | Files to reconcile across homes. Each entry is `{ name, strategy }` where `strategy` is `accounts` (union by id) or `newest`. |
+| `files` | array | `[{ name: "accounts.json", strategy: "accounts" }]` | Files to reconcile across homes. Each entry is `{ name, strategy }` where `strategy` is `accounts` (union by id) or `newest`. |
 
 Every key is editable from chat via `/sync-bridge-config`.
 
