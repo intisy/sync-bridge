@@ -75,6 +75,8 @@ Give any `plugins.json` entry a `sync: true` flag and it is mirrored into the ot
 
 ## Configuration
 
+> Config files are **auto-created with defaults on first run** (via core `ensureConfig`). **Global console logging** for every plugin is toggled in `config/settings.json` (`logConsole: true`, the opencode.json-equivalent).
+
 Config file: `~/.config/opencode/config/sync-bridge.json` (preferred) or `~/.config/opencode/sync-bridge.json` (fallback); same under `~/.claude` for Claude Code.
 
 ```json
