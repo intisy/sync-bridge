@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { existingHomes } from "./homes.js";
-import { makeWriteLog } from "../core/src/index.js";
+import { makeWriteLog, ensureConfig } from "../core/src/index.js";
 
 const NAME = "sync-bridge";
 
@@ -14,6 +14,9 @@ const NAME = "sync-bridge";
 // `files` array in sync-bridge.json. Each entry is { name, strategy }; `name` is
 // resolved per home to config/<name> or <name>, whichever exists.
 const DEFAULT_FILES = [{ name: "accounts.json", strategy: "accounts" }];
+
+// materialize config/sync-bridge.json with defaults on load, so it's discoverable
+ensureConfig(NAME, { logging: true, files: DEFAULT_FILES });
 
 let SYNC_CONFIG = null;
 
