@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 // Cross-app plugin-list sync. Any plugins.json entry flagged `sync: true` is
 // mirrored into every other app home's plugins.json, so enabling a plugin in one
 // app installs it in the other too. Unlike the generic file sync (one merged blob
@@ -10,6 +10,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from "
 import { join, dirname } from "path";
 import { randomBytes } from "crypto";
 import { existingHomes } from "./homes.js";
+import { getSyncConfig } from "./config.js";
 
 // matches plugin-updater's getPluginsPath: config/plugins.json is canonical,
 // top-level plugins.json is the legacy fallback, config/ is the default site.
@@ -47,6 +48,8 @@ function atomicWrite(file, content) {
 // sync:true, then add any a home is missing (matched by name). Returns a summary
 // { synced, homes, added: { <home>: [names] } }.
 export function syncPlugins() {
+  if (getSyncConfig().sync_plugins === false) return { synced: false, reason: "sync_plugins disabled", homes: 0, added: {} };
+
   const homes = existingHomes();
   if (homes.length < 2) return { synced: false, reason: "fewer than two app homes", homes: homes.length, added: {} };
 

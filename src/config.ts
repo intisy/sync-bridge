@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 // sync-bridge config + logging. The config search is bespoke (it spans BOTH app
 // homes, Claude first, and carries a `files` array), so getSyncConfig stays local;
 // the log WRITING is delegated to the shared core library like every other plugin.
@@ -16,7 +16,14 @@ const NAME = "sync-bridge";
 const DEFAULT_FILES = [{ name: "accounts.json", strategy: "accounts" }];
 
 // register defaults so the loader can discover + edit them (writes no file on load)
-defineConfig(NAME, { logging: true, files: DEFAULT_FILES });
+defineConfig(NAME, {
+  logging: true,
+  files: DEFAULT_FILES,
+  enabled: true,
+  sync_plugins: true,
+  default_strategy: "newest",
+  debounce_seconds: 0,
+});
 
 let SYNC_CONFIG = null;
 

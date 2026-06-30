@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 // The sync engine: reconcile a relative path across every existing app home via the chosen merge strategy (atomic temp-rename, skipping homes already up to date).
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, renameSync } from "fs";
@@ -6,6 +6,7 @@ import { join, dirname } from "path";
 import { randomBytes } from "crypto";
 import { existingHomes } from "./homes.js";
 import { STRATEGIES, newest } from "./merge.js";
+import { getSyncConfig } from "./config.js";
 
 const REGISTERED = new Map();   // relativePath -> options
 
@@ -35,7 +36,8 @@ function resolvePath(home, name) {
 }
 
 export function syncFile(name, options) {
-  const strategy = STRATEGIES[(options && options.strategy) || "newest"] || newest;
+  const defaultStrategy = getSyncConfig().default_strategy || "newest";
+  const strategy = STRATEGIES[(options && options.strategy) || defaultStrategy] || newest;
   const homes = existingHomes();
   if (homes.length < 2) return { synced: false, reason: "fewer than two app homes", homes: homes.length, wrote: 0 };
   const files = homes.map((home) => resolvePath(home, name));
