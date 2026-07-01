@@ -9,4 +9,5 @@ runPluginContract({
   commands: ["sync", "sync-bridge-config"],
   deploy: "load",
   actions: [["sync"]],
+  readme: true,
 });

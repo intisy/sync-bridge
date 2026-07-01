@@ -28,6 +28,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm install
       - run: npm run build
+      - run: git diff --exit-code -- README.md
       - run: npx vitest run
       - run: |
           VERSION="${GITHUB_REF_NAME#v}"

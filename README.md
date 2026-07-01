@@ -2,9 +2,11 @@
 
 [![npm version](https://img.shields.io/npm/v/sync-bridge)](https://www.npmjs.com/package/sync-bridge)
 [![npm downloads](https://img.shields.io/npm/dm/sync-bridge)](https://www.npmjs.com/package/sync-bridge)
-[![CI](https://github.com/intisy-ai/sync-bridge/actions/workflows/publish.yml/badge.svg)](https://github.com/intisy-ai/sync-bridge/actions/workflows/publish.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/intisy-ai/sync-bridge/publish.yml)](https://github.com/intisy-ai/sync-bridge/actions)
 
 Syncs config and account files between the Claude Code and OpenCode home directories. Every other plugin in the ecosystem stays inside the single home of the app it is running in; **sync-bridge is the one component permitted to span both homes**, so an account logged in (or a config changed) in one app is mirrored to the other. It is consumed two ways: as its own **plugin hook** (reconciles configured files on load — by default the core-auth account store), and as an **in-process library** (`dist/lib.js`) that [plugin-updater](https://github.com/intisy-ai/plugin-updater) loads to run `syncPlugins()`, mirroring `plugins.json` entries flagged `sync: true` into the other app.
+
+Each home is resolved by precedence (Claude prefers `~/.claude`; OpenCode prefers `~/.config/opencode`), overridable via `HUB_CLAUDE_DIR` / `HUB_OPENCODE_DIR`. A relative path (e.g. `config/accounts.json`) is read from every existing home, reconciled by a merge strategy, and written back atomically to all homes. The `accounts` strategy unions the core-auth account store by account id so no login is ever lost; `newest` copies the most-recently-modified version.
 
 ## Under-the-Hood Architecture
 
@@ -29,24 +31,25 @@ flowchart TD
     UPDATER["plugin-updater"] -->|syncPlugins() each launch| LIB
 ```
 
-Each home is resolved by precedence (Claude prefers `~/.claude`; OpenCode prefers `~/.config/opencode`), overridable via `HUB_CLAUDE_DIR` / `HUB_OPENCODE_DIR`. A relative path (e.g. `config/accounts.json`) is read from every existing home, reconciled by a merge strategy, and written back atomically to all homes. The `accounts` strategy unions the core-auth account store by account id so no login is ever lost; `newest` copies the most-recently-modified version.
-
 ## Structure
 
-- `src/` — TypeScript source (`homes`, `merge`, `sync`, `pluginsync`, `config`, `commands`, `index` = hook, `lib` = library entry)
-- `core/` — git submodule ([`intisy-ai/core`](https://github.com/intisy-ai/core)): shared config, logging, and the cross-app command framework — bundled into both output files by esbuild
-- `dist/` — Compiled output (generated; not committed): `index.js` (plugin hook) + `lib.js` (in-process library)
-- `test/` — Node test runner specs
+- `src/`
+  - TypeScript source (`homes`, `merge`, `sync`, `pluginsync`, `config`, `commands`, `index` = hook, `lib` = library entry)
+  - `core/` — git submodule ([`intisy-ai/core`](https://github.com/intisy-ai/core)): shared config, logging, and the cross-app command framework — bundled into both output files by esbuild
+  - `test/` — Node test runner specs
+- `dist/`
+  - Compiled output (generated; not committed): `index.js` (plugin hook) + `lib.js` (in-process library)
 
 ## Installation
 
 ### Via plugin-updater (recommended)
-Add to `~/.config/opencode/config/plugins.json`:
-```json
-[{ "name": "sync-bridge", "url": "https://github.com/intisy-ai/sync-bridge", "enabled": true }]
+
+```bash
+npx plugin-updater@latest init https://github.com/intisy-ai/sync-bridge
 ```
 
 ### Via npm
+
 ```bash
 npm install sync-bridge
 ```
@@ -75,44 +78,51 @@ Give any `plugins.json` entry a `sync: true` flag and it is mirrored into the ot
 
 ## Configuration
 
-> Config files are **never auto-created on launch** — settings are registered with defaults (core `defineConfig`) and edited in the loader's **Plugins → Configure** screen (or `/<plugin>-config`); a file is written only when you change a value. **Global console logging** for every plugin is toggled in `config/settings.json` (`logConsole: true`, the opencode.json-equivalent).
-
-Config file: `~/.config/opencode/config/sync-bridge.json` (preferred) or `~/.config/opencode/sync-bridge.json` (fallback); same under `~/.claude` for Claude Code.
+Config file: `<configDir>/config/sync-bridge.json` (edit via the loader or `/sync-bridge-config set`).
 
 ```json
 {
   "logging": true,
-  "files": [{ "path": "config/plugins.json", "strategy": "newest" }]
+  "files": [
+    {
+      "name": "accounts.json",
+      "strategy": "accounts"
+    }
+  ],
+  "enabled": true,
+  "sync_plugins": true,
+  "default_strategy": "newest",
+  "debounce_seconds": 0
 }
 ```
 
-The core-auth account store (`config/accounts.json`) is always synced; `files` adds more.
-
-| Key | Type | Default | Description |
-| --- | --- | --- | --- |
-| `logging` | boolean | `true` | Write a per-session log file. Set `false` to disable. |
-| `files` | array | `[{ name: "accounts.json", strategy: "accounts" }]` | Files to reconcile across homes. Each entry is `{ name, strategy }` where `strategy` is `accounts` (union by id) or `newest`. |
-
-Every key is editable from chat via `/sync-bridge-config`.
+| Key | Default |
+| --- | --- |
+| `logging` | `true` |
+| `files` | `[{"name":"accounts.json","strategy":"accounts"}]` |
+| `enabled` | `true` |
+| `sync_plugins` | `true` |
+| `default_strategy` | `"newest"` |
+| `debounce_seconds` | `0` |
 
 ## Commands
 
-Deployed automatically to both apps on load (`~/.config/opencode/command/` and `~/.claude/commands/`):
-
-| Command | Description |
-| --- | --- |
-| `/sync` | Reconcile all configured files and mirror `sync: true` plugins across both apps right now. |
-| `/sync-bridge-config` | View/change any config key: `list`, `get <key>`, `set <key> <value>`. 100% of the config is reachable here. |
+| Command | Description | Arguments |
+| --- | --- | --- |
+| `/sync-bridge-config` | View and change sync-bridge configuration | `list | get <key> | set <key> <value>` |
+| `/sync` | Reconcile synced files + mirror sync-enabled plugins across both apps now |  |
 
 ## Dependencies
 
-- **`core`** (required) — bundled git submodule; no separate install.
-- **`plugin-updater`** (recommended) — calls `syncPlugins()` from `dist/lib.js` each launch to mirror `sync: true` plugins; without it, only the on-load file reconcile and the `/sync` command run.
+- `core`
+- `plugin-updater`
 
 ## Logging
 
-Logs are written to `<home>/logs/YYYY-MM-DD/sync-bridge-HH-MM-SS.log`. Set `"logging": false` to disable.
+Logs are written to `<configDir>/logs/YYYY-MM-DD/sync-bridge-HH-MM-SS.log` and are toggled by
+this plugin's `logging` config (default on). Console mirroring is global, off by default,
+and controlled by the shared `config/settings.json` `logConsole` flag.
 
 ## License
 
-MIT
+MIT.
